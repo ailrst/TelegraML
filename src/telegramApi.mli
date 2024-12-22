@@ -90,6 +90,7 @@ module MessageEntity : sig
     | Pre
     | TextLink of string
     | TextMention of User.user
+    | Spoiler
 
   (** Takes the [url] and [user] fields of the record and the [type] field, then creates a value of type entity_type based on that *)
   val entity_type_of_string : string option -> User.user option -> string -> entity_type
@@ -1103,6 +1104,7 @@ module Update : sig
     | InlineQuery of int * InlineQuery.inline_query
     | ChosenInlineResult of int * InlineQuery.chosen_inline_result
     | CallbackQuery of int * CallbackQuery.callback_query
+    | Unsupported of int * string
 
   (** Read an [update] out of some JSON *)
   val read : Yojson.Safe.t -> update

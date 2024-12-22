@@ -75,6 +75,7 @@ module MessageEntity = struct
     | Pre
     | TextLink of string
     | TextMention of User.user
+    | Spoiler
 
   let entity_type_of_string url user = function
     | "mention" -> Mention
@@ -86,6 +87,7 @@ module MessageEntity = struct
     | "italic" -> Italic
     | "code" -> Code
     | "pre" -> Pre
+    | "spoiler" -> Spoiler
     | "text_link" -> begin match url with
         | Some url -> TextLink url
         | None -> raise @@ ApiException "MessageEntity of type 'text_link' missing url"
@@ -94,7 +96,7 @@ module MessageEntity = struct
         | Some user -> TextMention user
         | None -> raise @@ ApiException "MessageEntity of type 'text_mention' missing user"
       end
-    | _ -> raise @@ ApiException "Unrecognized type of MessageEntity encountered"
+    | x -> raise @@ ApiException (Printf.sprintf "Unrecognized type of MessageEntity encountered: '%s'" x)
 
   type message_entity = {
     entity_type : entity_type;
@@ -1440,6 +1442,7 @@ module Update = struct
     | InlineQuery of int * InlineQuery.inline_query
     | ChosenInlineResult of int * InlineQuery.chosen_inline_result
     | CallbackQuery of int * CallbackQuery.callback_query
+    | Unsupported of int * string
 
   let read obj =
     let update_id = the_int @@ get_field "update_id" obj in
@@ -1450,6 +1453,7 @@ module Update = struct
     let inline_query = InlineQuery.read <$> get_opt_field "inline_query" obj in
     let chosen_inline_result = InlineQuery.read_chosen_inline_result <$> get_opt_field "chosen_inline_result" obj in
     let callback_query = CallbackQuery.read <$> get_opt_field "callback_query" obj in
+    let jstr = Some (Yojson.Safe.to_string obj) in
     let r =
       None >>>=
       (message, (fun x -> Message (update_id, x))) >>>=
@@ -1458,7 +1462,8 @@ module Update = struct
       (edited_channel_post, (fun x -> EditedChannelPost (update_id, x))) >>>=
       (inline_query, (fun x -> InlineQuery (update_id, x))) >>>=
       (chosen_inline_result, (fun x -> ChosenInlineResult (update_id, x))) >>>=
-      (callback_query, (fun x -> CallbackQuery (update_id, x)))
+      (callback_query, (fun x -> CallbackQuery (update_id, x))) >>>=
+      (jstr, (fun x -> Unsupported (update_id, x)))
     in
     match r with Some r -> r | None ->
       raise @@
@@ -1476,6 +1481,7 @@ module Update = struct
     | InlineQuery (id, _) -> id
     | ChosenInlineResult (id, _) -> id
     | CallbackQuery (id, _) -> id
+    | Unsupported (id, _) -> id
 end
 
 module Result = struct
