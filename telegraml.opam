@@ -12,6 +12,13 @@ depends: [
   "fmt"
   "logs"
   "batteries"
+  "yojson"
+  "lwt"
+  "uri"
+  "cohttp"
+  "cohttp-lwt"
+  "cohttp-lwt-unix"
+  "lwt_ssl"
 ]
 build: [
   ["dune" "subst"] {pinned}
